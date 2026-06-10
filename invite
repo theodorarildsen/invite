@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission Briefing</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0a0a0a; color: #c8c8c8; font-family: 'Courier New', monospace; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+  .doc { max-width: 500px; width: 100%; }
+  .header { border: 1px solid #2a2a2a; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; background: #111; }
+  .header .logo { font-size: 11px; letter-spacing: 0.2em; color: #555; text-transform: uppercase; }
+  .header .cls { font-size: 11px; letter-spacing: 0.14em; color: #7a3a3a; border: 1px solid #7a3a3a; padding: 2px 8px; }
+  .stamp-row { padding: 0.75rem 1.5rem 0; }
+  .stamp { border: 2px solid #7a3a3a; color: #7a3a3a; font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase; display: inline-block; padding: 4px 12px; transform: rotate(-4deg); }
+  .body { border: 1px solid #2a2a2a; border-top: none; padding: 1.5rem; background: #0f0f0f; }
+  .field { margin-bottom: 1rem; }
+  .field-label { font-size: 10px; letter-spacing: 0.16em; color: #444; text-transform: uppercase; margin-bottom: 4px; }
+  .field-val { font-size: 14px; color: #ddd; }
+  .field-val strong { color: #fff; }
+  .divider { border: none; border-top: 1px solid #222; margin: 1.25rem 0; }
+  .mission-title { font-size: 18px; font-weight: 700; color: #fff; letter-spacing: 0.04em; margin: 1rem 0 0.5rem; }
+  .mission-body { font-size: 13px; color: #999; line-height: 1.8; }
+  .mission-body .highlight { color: #ddd; }
+  .redact { background: #333; color: #333; user-select: none; padding: 0 4px; border-radius: 2px; cursor: pointer; transition: all 0.25s; }
+  .redact:hover, .redact.revealed { background: transparent; color: #ddd; }
+  .redact-hint { font-size: 10px; color: #3a3a3a; margin-top: 6px; }
+  .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem; }
+  .detail-item { background: #141414; border: 1px solid #222; padding: 0.75rem 1rem; }
+  .detail-item .dk { font-size: 10px; letter-spacing: 0.14em; color: #444; text-transform: uppercase; margin-bottom: 4px; }
+  .detail-item .dv { font-size: 14px; color: #ddd; font-weight: 700; }
+  .name-section { margin-top: 1.5rem; }
+  .name-label { font-size: 10px; letter-spacing: 0.16em; color: #444; text-transform: uppercase; margin-bottom: 8px; }
+  .name-row { display: flex; gap: 8px; }
+  .name-row input { flex: 1; background: #141414; border: 1px solid #2a2a2a; color: #e0e0e0; font-family: 'Courier New', monospace; font-size: 14px; padding: 0.6rem 0.9rem; outline: none; }
+  .name-row input:focus { border-color: #555; }
+  .name-row input::placeholder { color: #333; }
+  .accept-btn { background: transparent; border: 1px solid #444; color: #e0e0e0; font-family: 'Courier New', monospace; font-size: 13px; padding: 0.6rem 1.25rem; cursor: pointer; letter-spacing: 0.06em; white-space: nowrap; transition: background 0.15s; }
+  .accept-btn:hover { background: #1a1a1a; }
+  .err { display: none; font-size: 11px; color: #7a3a3a; margin-top: 8px; letter-spacing: 0.06em; }
+  .accepted { display: none; border: 1px solid #3a5a3a; background: #0a180a; padding: 1rem; text-align: center; margin-top: 1rem; }
+  .accepted p { font-size: 12px; color: #5a9a5a; letter-spacing: 0.08em; }
+  .blink { animation: blink 1.2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
+  .footer { font-size: 10px; color: #2a2a2a; letter-spacing: 0.1em; text-align: center; margin-top: 0.75rem; }
+
+  /* Burned overlay */
+  .burned-overlay { display: none; position: fixed; inset: 0; background: #0a0a0a; z-index: 100; flex-direction: column; align-items: center; justify-content: center; gap: 1.25rem; padding: 2rem; }
+  .burned-overlay.show { display: flex; }
+  .big-x { font-size: 96px; color: #7a1a1a; line-height: 1; animation: xpop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes xpop { 0%{transform:scale(0) rotate(-15deg);opacity:0} 100%{transform:scale(1) rotate(0deg);opacity:1} }
+  .burned-title { font-size: 14px; letter-spacing: 0.22em; color: #7a1a1a; text-transform: uppercase; animation: flicker 2.5s infinite; }
+  .burned-sub { font-size: 12px; color: #333; letter-spacing: 0.08em; text-align: center; max-width: 300px; line-height: 1.8; }
+  .burned-line { width: 40px; height: 1px; background: #1f1f1f; }
+  .burned-ref { font-size: 10px; color: #222; letter-spacing: 0.12em; }
+  @keyframes flicker { 0%,100%{opacity:1} 47%{opacity:0.7} 50%{opacity:0.2} 53%{opacity:0.9} }
+</style>
+</head>
+<body>
+
+<!-- Burned overlay — shown on unauthorized access -->
+<div class="burned-overlay" id="burned">
+  <div class="big-x">✕</div>
+  <div class="burned-title">Access Denied</div>
+  <div class="burned-line"></div>
+  <p class="burned-sub">This briefing has been burned.<br>Identity not recognised. Clearance revoked.<br>Do not attempt re-entry.</p>
+  <div class="burned-line"></div>
+  <p class="burned-ref">REF: UNAUTHORISED — FILE DESTROYED</p>
+</div>
+
+<div class="doc" id="main-doc">
+  <div class="header">
+    <span class="logo">Operation: Birthday</span>
+    <span class="cls">Top Secret</span>
+  </div>
+  <div class="stamp-row"><div class="stamp">Classified</div></div>
+
+  <div class="body">
+    <div class="field">
+      <div class="field-label">Issued to</div>
+      <div class="field-val"><strong>You. Yes, you.</strong></div>
+    </div>
+    <div class="field">
+      <div class="field-label">File reference</div>
+      <div class="field-val">BDY-2025 &nbsp;·&nbsp; Priority: High</div>
+    </div>
+    <hr class="divider">
+
+    <div class="mission-title">Mission Briefing</div>
+    <p class="mission-body">
+      Intelligence has confirmed a <span class="highlight">gathering of high-value individuals</span> at a classified location. Your presence has been specifically requested by the organiser.<br><br>
+      Objective: Report to <span class="highlight"><span class="redact" id="addr" onclick="reveal(this)">[ tap to reveal address ]</span></span> no later than <span class="highlight">[TIME] hours</span>. Blend in. Bring good energy. Do not be late.<br><br>
+      <span class="highlight">Note:</span> This briefing is issued to you and you alone. Unauthorised personnel — including +1s — are strictly prohibited without prior clearance from HQ. If you wish to bring someone, submit a request directly to the organiser for approval.
+    </p>
+    <p class="redact-hint">↑ tap the blacked-out text</p>
+
+    <div class="details-grid">
+      <div class="detail-item">
+        <div class="dk">Date</div>
+        <div class="dv">[DATE]</div>
+      </div>
+      <div class="detail-item">
+        <div class="dk">Time</div>
+        <div class="dv">[TIME]</div>
+      </div>
+      <div class="detail-item">
+        <div class="dk">Dress code</div>
+        <div class="dv">Casual</div>
+      </div>
+      <div class="detail-item">
+        <div class="dk">Guests</div>
+        <div class="dv">~10–12</div>
+      </div>
+    </div>
+
+    <div class="name-section" id="name-section">
+      <p class="name-label">State your name to confirm attendance</p>
+      <div class="name-row">
+        <input type="text" id="agent-name" placeholder="Your name..." maxlength="40" />
+        <button class="accept-btn" onclick="accept()">Accept →</button>
+      </div>
+      <p class="err" id="err">Enter your name first, agent.</p>
+    </div>
+
+    <div class="accepted" id="accepted">
+      <p class="blink">✓ Confirmation received. See you there, agent.</p>
+    </div>
+  </div>
+  <p class="footer">This message will not self-destruct. Keep it classified.</p>
+</div>
+
+<script>
+  const AUTHORISED = ['julius','niels','ida','trille','michael','sebastian','sylvester'];
+
+  function reveal(el) {
+    el.classList.add('revealed');
+    el.textContent = '[YOUR ADDRESS HERE]';
+    el.style.cursor = 'default';
+  }
+
+  function burn() {
+    // Fade out the doc, then show burned screen
+    const doc = document.getElementById('main-doc');
+    doc.style.transition = 'opacity 0.4s ease';
+    doc.style.opacity = '0';
+    setTimeout(() => {
+      doc.style.display = 'none';
+      const overlay = document.getElementById('burned');
+      overlay.classList.add('show');
+    }, 400);
+  }
+
+  function accept() {
+    const name = document.getElementById('agent-name').value.trim();
+    const err = document.getElementById('err');
+
+    if (!name) {
+      err.textContent = 'Enter your name first, agent.';
+      err.style.display = 'block';
+      return;
+    }
+
+    if (!AUTHORISED.includes(name.toLowerCase())) {
+      burn();
+      return;
+    }
+
+    err.style.display = 'none';
+    const msg = encodeURIComponent('Agent ' + name + ' reporting for duty. Mission accepted. 🕵️');
+    window.location.href = 'sms:+4593855900?body=' + msg;
+    document.getElementById('accepted').style.display = 'block';
+    document.getElementById('name-section').style.opacity = '0.4';
+    document.getElementById('name-section').style.pointerEvents = 'none';
+  }
+
+  document.getElementById('agent-name').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') accept();
+  });
+</script>
+</body>
+</html>
