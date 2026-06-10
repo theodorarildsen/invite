@@ -37,6 +37,7 @@
   .name-row input::placeholder { color: #333; }
   .accept-btn { background: transparent; border: 1px solid #444; color: #e0e0e0; font-family: 'Courier New', monospace; font-size: 13px; padding: 0.6rem 1.25rem; cursor: pointer; letter-spacing: 0.06em; white-space: nowrap; transition: background 0.15s; }
   .accept-btn:hover { background: #1a1a1a; }
+  .accept-btn:disabled { opacity: 0.4; cursor: not-allowed; }
   .err { display: none; font-size: 11px; color: #7a3a3a; margin-top: 8px; letter-spacing: 0.06em; }
   .accepted { display: none; border: 1px solid #3a5a3a; background: #0a180a; padding: 1rem; text-align: center; margin-top: 1rem; }
   .accepted p { font-size: 12px; color: #5a9a5a; letter-spacing: 0.08em; }
@@ -58,7 +59,7 @@
 </head>
 <body>
 
-<!-- Burned overlay — shown on unauthorized access -->
+<!-- Burned overlay -->
 <div class="burned-overlay" id="burned">
   <div class="big-x">✕</div>
   <div class="burned-title">Access Denied</div>
@@ -117,9 +118,9 @@
       <p class="name-label">State your name to confirm attendance</p>
       <div class="name-row">
         <input type="text" id="agent-name" placeholder="Your name..." maxlength="40" />
-        <button class="accept-btn" onclick="accept()">Accept →</button>
+        <button class="accept-btn" id="accept-btn" onclick="accept()">Accept →</button>
       </div>
-      <p class="err" id="err">Enter your name first, agent.</p>
+      <p class="err" id="err"></p>
     </div>
 
     <div class="accepted" id="accepted">
@@ -131,6 +132,7 @@
 
 <script>
   const AUTHORISED = ['julius','niels','ida','trille','michael','sebastian','sylvester'];
+  const WEBHOOK = 'https://discord.com/api/webhooks/1514312320392892427/CsHYeAnY2Q4QBXWxy6Jt07hmqT_nMWxeaclxO8-MBlJLrVdNedXozbS5AkYbtcXcmgrga';
 
   function reveal(el) {
     el.classList.add('revealed');
@@ -139,20 +141,19 @@
   }
 
   function burn() {
-    // Fade out the doc, then show burned screen
     const doc = document.getElementById('main-doc');
     doc.style.transition = 'opacity 0.4s ease';
     doc.style.opacity = '0';
     setTimeout(() => {
       doc.style.display = 'none';
-      const overlay = document.getElementById('burned');
-      overlay.classList.add('show');
+      document.getElementById('burned').classList.add('show');
     }, 400);
   }
 
-  function accept() {
+  async function accept() {
     const name = document.getElementById('agent-name').value.trim();
     const err = document.getElementById('err');
+    const btn = document.getElementById('accept-btn');
 
     if (!name) {
       err.textContent = 'Enter your name first, agent.';
@@ -165,9 +166,23 @@
       return;
     }
 
+    // Disable button while sending
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
     err.style.display = 'none';
-    const msg = encodeURIComponent('Agent ' + name + ' reporting for duty. Mission accepted. 🕵️');
-    window.location.href = 'sms:+4593855900?body=' + msg;
+
+    try {
+      await fetch(WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `🕵️ **Agent ${name}** has accepted the mission and will be attending.`
+        })
+      });
+    } catch (e) {
+      // Fail silently — guest still sees confirmation
+    }
+
     document.getElementById('accepted').style.display = 'block';
     document.getElementById('name-section').style.opacity = '0.4';
     document.getElementById('name-section').style.pointerEvents = 'none';
