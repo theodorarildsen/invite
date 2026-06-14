@@ -133,6 +133,7 @@
 
 <script>
   const AUTHORISED = ['julius','niels','ida','trille','michael','sebastian','sylvester'];
+  let strikes = 0;
   const WEBHOOK = 'https://discord.com/api/webhooks/1514312320392892427/CsHYeAnY2Q4QBXWxy6Jt07hmqT_nMWxeaclxO8-MBlJLrVdNedXozbS5AkYbtcXmgrga';
 
   function reveal(el) {
@@ -163,7 +164,13 @@
     }
 
     if (!AUTHORISED.some(n => name.toLowerCase().split(' ').includes(n))) {
-      burn();
+      strikes++;
+      if (strikes >= 3) {
+        burn();
+      } else {
+        err.textContent = `Identity not recognised. ${3 - strikes} attempt${3 - strikes === 1 ? '' : 's'} remaining.`;
+        err.style.display = 'block';
+      }
       return;
     }
 
@@ -194,5 +201,4 @@
   });
 </script>
 </body>
-</html>
 </html>
