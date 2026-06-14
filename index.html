@@ -162,7 +162,7 @@
       return;
     }
 
-    if (!AUTHORISED.includes(name.toLowerCase())) {
+    if (!AUTHORISED.some(n => name.toLowerCase().split(' ').includes(n))) {
       burn();
       return;
     }
@@ -194,4 +194,5 @@
   });
 </script>
 </body>
+</html>
 </html>
